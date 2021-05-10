@@ -282,26 +282,35 @@ class turntable_lottery extends cc.Component {
     }
     /**计算运动角度 */
     private _comp_move_angle(index_n_: number): number {
+        if (this.arraw_o.uuid === this.node.uuid) {
+            index_n_ = this.box_n - index_n_ - 1;
+        }
         /**移动角度 */
         let move_angle_n = 0;
         /**格子角度范围 */
         let box_range_n = 360 / this.box_n;
         /**目标角度 */
-        let target_angle_n = -index_n_ * box_range_n;
+        let target_angle_n = index_n_ * box_range_n;
+        let rotation_n = -this.arraw_o.angle;
         if (this.move_dire_e === _turntable_lottery.move_dire.顺时针) {
-            if (target_angle_n < this.arraw_o.angle) {
-                move_angle_n = 360 - (target_angle_n - this.arraw_o.angle);
+            if (target_angle_n >= rotation_n) {
+                move_angle_n = target_angle_n + this.arraw_o.angle;
             } else {
-                move_angle_n = this.arraw_o.angle - target_angle_n;
+                move_angle_n = 360 - (rotation_n - target_angle_n);
             }
+            move_angle_n += box_range_n * 0.5;
         } else {
-            if (target_angle_n < this.arraw_o.angle) {
-                move_angle_n = target_angle_n - this.arraw_o.angle;
+            if (target_angle_n >= rotation_n) {
+                move_angle_n = rotation_n - target_angle_n;
             } else {
-                move_angle_n = 360 - (this.arraw_o.angle - target_angle_n);
+                move_angle_n = 360 - (this.arraw_o.angle + target_angle_n);
             }
+            move_angle_n -= box_range_n * 0.5;
         }
-        move_angle_n += box_range_n * 0.5;
+        move_angle_n %= 360;
+        if (move_angle_n < 0) {
+            move_angle_n += 360;
+        }
         return move_angle_n;
     }
     /**重置
@@ -327,8 +336,13 @@ class turntable_lottery extends cc.Component {
         this._reset();
         /**运动角度 */
         let move_angle_n = this._comp_move_angle(index_n_);
+        /**随机角度 */
+        let random_angle_n = this._random(-this.inertia_n * 0.5, this.inertia_n * 0.5);
         // 滚动距离(360 * 圈数 + 距离目标角度 + 随机角度)
-        this._scroll_action_a.dist_n = 360 * (this.turn_lap_n + this._random(0, this.turn_lap_random_n)) + move_angle_n + this._random(-this.inertia_n * 0.5, this.inertia_n * 0.5);
+        this._scroll_action_a.dist_n = 360 * (this.turn_lap_n + this._random(0, this.turn_lap_random_n)) + move_angle_n + random_angle_n;
+        if (this._scroll_action_a.dist_n < 0) {
+            this._scroll_action_a.dist_n = move_angle_n;
+        }
         // 滚动速度
         this._real_max_speed_n = this.max_speed_n + this._random(-this.random_speed_n * 0.5, this.random_speed_n * 0.5);
         this._scroll_b = true;
@@ -345,7 +359,7 @@ class turntable_lottery extends cc.Component {
     }
     /* ***************其他事件*************** */
     private _scrolling(): void {
-        this.arraw_o.angle += this.arraw_o.uuid === this.node.uuid ? this._curr_speed_n : -this._curr_speed_n;
+        this.arraw_o.angle -= this._curr_speed_n;
     }
 }
 
